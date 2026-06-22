@@ -14,16 +14,204 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      blocked_ips: {
+        Row: {
+          blocked_until: string | null
+          created_at: string
+          id: string
+          ip: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_until?: string | null
+          created_at?: string
+          id?: string
+          ip: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_until?: string | null
+          created_at?: string
+          id?: string
+          ip?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      requests_log: {
+        Row: {
+          allowed: boolean
+          category: Database["public"]["Enums"]["attack_category"] | null
+          created_at: string
+          id: string
+          ip: string
+          matched_rule_id: string | null
+          matched_rule_name: string | null
+          method: string
+          path: string
+          payload: string | null
+          reason: string | null
+          severity: Database["public"]["Enums"]["attack_severity"] | null
+          user_agent: string | null
+        }
+        Insert: {
+          allowed: boolean
+          category?: Database["public"]["Enums"]["attack_category"] | null
+          created_at?: string
+          id?: string
+          ip: string
+          matched_rule_id?: string | null
+          matched_rule_name?: string | null
+          method: string
+          path: string
+          payload?: string | null
+          reason?: string | null
+          severity?: Database["public"]["Enums"]["attack_severity"] | null
+          user_agent?: string | null
+        }
+        Update: {
+          allowed?: boolean
+          category?: Database["public"]["Enums"]["attack_category"] | null
+          created_at?: string
+          id?: string
+          ip?: string
+          matched_rule_id?: string | null
+          matched_rule_name?: string | null
+          method?: string
+          path?: string
+          payload?: string | null
+          reason?: string | null
+          severity?: Database["public"]["Enums"]["attack_severity"] | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requests_log_matched_rule_id_fkey"
+            columns: ["matched_rule_id"]
+            isOneToOne: false
+            referencedRelation: "rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rules: {
+        Row: {
+          category: Database["public"]["Enums"]["attack_category"]
+          created_at: string
+          description: string | null
+          enabled: boolean
+          id: string
+          is_builtin: boolean
+          name: string
+          pattern: string
+          severity: Database["public"]["Enums"]["attack_severity"]
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["attack_category"]
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          is_builtin?: boolean
+          name: string
+          pattern: string
+          severity?: Database["public"]["Enums"]["attack_severity"]
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["attack_category"]
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          is_builtin?: boolean
+          name?: string
+          pattern?: string
+          severity?: Database["public"]["Enums"]["attack_severity"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      waf_settings: {
+        Row: {
+          auto_block_threshold: number
+          enabled: boolean
+          id: number
+          rate_limit_per_min: number
+          updated_at: string
+        }
+        Insert: {
+          auto_block_threshold?: number
+          enabled?: boolean
+          id?: number
+          rate_limit_per_min?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_block_threshold?: number
+          enabled?: boolean
+          id?: number
+          rate_limit_per_min?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_public_stats: {
+        Args: never
+        Returns: {
+          active_rules: number
+          total_blocked: number
+          total_requests: number
+        }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      attack_category:
+        | "sqli"
+        | "xss"
+        | "path_traversal"
+        | "command_injection"
+        | "lfi"
+        | "rfi"
+        | "rate_limit"
+        | "ip_block"
+        | "other"
+      attack_severity: "low" | "medium" | "high" | "critical"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +338,20 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      attack_category: [
+        "sqli",
+        "xss",
+        "path_traversal",
+        "command_injection",
+        "lfi",
+        "rfi",
+        "rate_limit",
+        "ip_block",
+        "other",
+      ],
+      attack_severity: ["low", "medium", "high", "critical"],
+    },
   },
 } as const
