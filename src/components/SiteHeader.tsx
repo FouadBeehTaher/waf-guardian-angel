@@ -20,6 +20,7 @@ export function SiteHeader() {
           <Link to="/" className="text-muted-foreground hover:text-foreground [&.active]:text-foreground">{t.nav.home}</Link>
           <Link to="/simulator" className="text-muted-foreground hover:text-foreground [&.active]:text-foreground">{t.nav.simulator}</Link>
           <Link to="/docs" className="text-muted-foreground hover:text-foreground [&.active]:text-foreground">{t.nav.docs}</Link>
+          <Link to="/references" className="text-muted-foreground hover:text-foreground [&.active]:text-foreground">{t.nav.references}</Link>
           {user && isAdmin && (
             <Link to="/dashboard" className="text-muted-foreground hover:text-foreground [&.active]:text-foreground">{t.nav.dashboard}</Link>
           )}
