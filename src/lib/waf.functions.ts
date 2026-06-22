@@ -53,11 +53,15 @@ export const inspectRequest = createServerFn({ method: "POST" })
     try { userAgent = userAgent || getRequestHeader("user-agent") || undefined; } catch { /* ignore */ }
 
     // Load settings + rules
-    const [{ data: settings }, { data: rulesData }, { data: blocked }] = await Promise.all([
+    const [settingsRes, rulesRes, blockedRes] = await Promise.all([
       supabaseAdmin.from("waf_settings").select("*").eq("id", 1).maybeSingle(),
       supabaseAdmin.from("rules").select("*").eq("enabled", true),
       supabaseAdmin.from("blocked_ips").select("ip,blocked_until").eq("ip", ip).maybeSingle(),
     ]);
+    const settings = settingsRes.data;
+    const rulesData = rulesRes.data ?? [];
+    const blocked = blockedRes.data;
+    if (rulesRes.error) console.error("[WAF] rules fetch error:", rulesRes.error);
 
     if (settings && settings.enabled === false) {
       const { data: log } = await supabaseAdmin.from("requests_log").insert({
@@ -78,16 +82,21 @@ export const inspectRequest = createServerFn({ method: "POST" })
 
     // Rule matching
     const haystack = `${data.method} ${data.path} ${data.body ?? ""}`;
-    let matched: typeof rulesData extends Array<infer R> ? R : never | undefined;
-    for (const rule of rulesData ?? []) {
+    type RuleRow = (typeof rulesData)[number];
+    let matched: RuleRow | undefined;
+    for (const rule of rulesData) {
       try {
         const re = new RegExp(rule.pattern);
-        if (re.test(haystack)) { matched = rule as any; break; }
-      } catch { /* skip bad regex */ }
+        if (re.test(haystack)) { matched = rule; break; }
+      } catch (e) {
+        console.warn("[WAF] bad regex in rule", rule.name, e);
+      }
     }
+    console.log(`[WAF] inspect: rules=${rulesData.length} haystack="${haystack}" matched=${matched?.name ?? "none"}`);
 
     if (matched) {
-      const m: any = matched;
+      const m = matched;
+
       const { data: log } = await supabaseAdmin.from("requests_log").insert({
         ip, method: data.method, path: data.path, payload: data.body ?? null, user_agent: userAgent ?? null,
         matched_rule_id: m.id, matched_rule_name: m.name, category: m.category, severity: m.severity,
