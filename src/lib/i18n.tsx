@@ -177,7 +177,7 @@ type Dict = {
   auth: { title: string; email: string; password: string; signIn: string; signUp: string; google: string; switchToSignUp: string; switchToSignIn: string; firstUserNote: string; signOut: string; notAdmin: string };
   docs: { title: string; sections: { t: string; d: string }[] };
   severities: { low: string; medium: string; high: string; critical: string };
-  categories: { sqli: string; xss: string; path_traversal: string; command_injection: string; lfi: string; rfi: string; rate_limit: string; ip_block: string; other: string };
+  categories: { sqli: string; xss: string; dom_xss: string; path_traversal: string; command_injection: string; lfi: string; rfi: string; ssti: string; xxe: string; ssi: string; file_upload: string; file_inclusion: string; rate_limit: string; ip_block: string; other: string };
   common: { save: string; cancel: string; loading: string; error: string; search: string };
 };
 
