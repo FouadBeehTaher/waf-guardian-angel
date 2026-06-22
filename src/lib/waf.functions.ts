@@ -9,6 +9,15 @@ export interface InspectInput {
   userAgent?: string;
 }
 
+export interface MatchedRule {
+  id: string;
+  name: string;
+  category: string;
+  severity: "low" | "medium" | "high" | "critical";
+  weight: number;
+  layer: string; // which decode pass found it
+}
+
 export interface InspectResult {
   allowed: boolean;
   matchedRuleId?: string;
@@ -16,6 +25,8 @@ export interface InspectResult {
   category?: string;
   severity?: "low" | "medium" | "high" | "critical";
   reason?: string;
+  threatScore: number;
+  matchedRules: MatchedRule[];
   logId?: string;
 }
 
@@ -30,11 +41,58 @@ const inspectSchema = z.object({
 function pseudoIp(seed: string): string {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
-  const a = Math.abs(h) % 223 + 11;
-  const b = Math.abs(h >> 8) % 254 + 1;
-  const c = Math.abs(h >> 16) % 254 + 1;
-  const d = Math.abs(h >> 24) % 254 + 1;
+  const a = (Math.abs(h) % 223) + 11;
+  const b = (Math.abs(h >> 8) % 254) + 1;
+  const c = (Math.abs(h >> 16) % 254) + 1;
+  const d = (Math.abs(h >> 24) % 254) + 1;
   return `${a}.${b}.${c}.${d}`;
+}
+
+// ---------------- Multi-pass decoding (anti-evasion) ----------------
+function safeDecode(fn: () => string): string | null {
+  try { return fn(); } catch { return null; }
+}
+
+function htmlEntityDecode(s: string): string {
+  return s
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(parseInt(d, 10)))
+    .replace(/&lt;/gi, "<").replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"').replace(/&apos;/gi, "'")
+    .replace(/&amp;/gi, "&");
+}
+
+function buildDecodeLayers(input: string): { label: string; text: string }[] {
+  const layers: { label: string; text: string }[] = [{ label: "raw", text: input }];
+  const seen = new Set<string>([input]);
+
+  const url1 = safeDecode(() => decodeURIComponent(input));
+  if (url1 && !seen.has(url1)) { layers.push({ label: "url", text: url1 }); seen.add(url1); }
+
+  const url2 = url1 ? safeDecode(() => decodeURIComponent(url1)) : null;
+  if (url2 && !seen.has(url2)) { layers.push({ label: "url-x2", text: url2 }); seen.add(url2); }
+
+  const html = htmlEntityDecode(url1 ?? input);
+  if (!seen.has(html)) { layers.push({ label: "html-entity", text: html }); seen.add(html); }
+
+  // Base64-decode any standalone-looking base64 chunks (>= 12 chars)
+  const b64re = /[A-Za-z0-9+/]{12,}={0,2}/g;
+  const base = url1 ?? input;
+  const matches = base.match(b64re);
+  if (matches) {
+    for (const m of matches.slice(0, 5)) {
+      const decoded = safeDecode(() => {
+        if (typeof atob !== "undefined") return atob(m);
+        // @ts-ignore
+        return Buffer.from(m, "base64").toString("utf8");
+      });
+      if (decoded && /^[\x20-\x7e\s]+$/.test(decoded) && !seen.has(decoded)) {
+        layers.push({ label: "base64", text: decoded });
+        seen.add(decoded);
+      }
+    }
+  }
+  return layers;
 }
 
 // ---------------- Inspect Request ----------------
@@ -45,14 +103,17 @@ export const inspectRequest = createServerFn({ method: "POST" })
     const { getRequestIP, getRequestHeader } = await import("@tanstack/react-start/server");
 
     let ip = "0.0.0.0";
-    try { ip = getRequestIP({ xForwardedFor: true }) || pseudoIp(data.path + data.body); } catch { ip = pseudoIp(data.path + (data.body ?? "")); }
-    // For demos, randomize IP a bit so charts look alive
-    if (ip === "127.0.0.1" || ip === "::1" || ip === "0.0.0.0") ip = pseudoIp(data.path + (data.body ?? "") + Date.now().toString().slice(-3));
+    try {
+      ip = getRequestIP({ xForwardedFor: true }) || pseudoIp(data.path + (data.body ?? ""));
+    } catch {
+      ip = pseudoIp(data.path + (data.body ?? ""));
+    }
+    if (ip === "127.0.0.1" || ip === "::1" || ip === "0.0.0.0")
+      ip = pseudoIp(data.path + (data.body ?? "") + Date.now().toString().slice(-3));
 
     let userAgent = data.userAgent;
-    try { userAgent = userAgent || getRequestHeader("user-agent") || undefined; } catch { /* ignore */ }
+    try { userAgent = userAgent || getRequestHeader("user-agent") || undefined; } catch { /* noop */ }
 
-    // Load settings + rules
     const [settingsRes, rulesRes, blockedRes] = await Promise.all([
       supabaseAdmin.from("waf_settings").select("*").eq("id", 1).maybeSingle(),
       supabaseAdmin.from("rules").select("*").eq("enabled", true),
@@ -66,56 +127,77 @@ export const inspectRequest = createServerFn({ method: "POST" })
     if (settings && settings.enabled === false) {
       const { data: log } = await supabaseAdmin.from("requests_log").insert({
         ip, method: data.method, path: data.path, payload: data.body ?? null, user_agent: userAgent ?? null,
-        allowed: true, reason: "WAF disabled",
+        allowed: true, reason: "WAF disabled", threat_score: 0,
       }).select("id").single();
-      return { allowed: true, logId: log?.id };
+      return { allowed: true, threatScore: 0, matchedRules: [], logId: log?.id };
     }
 
-    // IP blocklist check
     if (blocked && (!blocked.blocked_until || new Date(blocked.blocked_until) > new Date())) {
       const { data: log } = await supabaseAdmin.from("requests_log").insert({
         ip, method: data.method, path: data.path, payload: data.body ?? null, user_agent: userAgent ?? null,
-        allowed: false, category: "ip_block", severity: "high", reason: "IP is on blocklist",
+        allowed: false, category: "ip_block", severity: "high", reason: "IP is on blocklist", threat_score: 10,
       }).select("id").single();
-      return { allowed: false, category: "ip_block", severity: "high", reason: "IP is on blocklist", logId: log?.id };
+      return { allowed: false, category: "ip_block", severity: "high", reason: "IP is on blocklist", threatScore: 10, matchedRules: [], logId: log?.id };
     }
 
-    // Rule matching
-    const haystack = `${data.method} ${data.path} ${data.body ?? ""}`;
+    // Multi-pass decoded haystacks — defeat URL/Base64/HTML-entity evasion
+    const rawCombined = `${data.method} ${data.path} ${data.body ?? ""}`;
+    const layers = buildDecodeLayers(rawCombined);
+
+    const matched: MatchedRule[] = [];
+    const seenRuleIds = new Set<string>();
     type RuleRow = (typeof rulesData)[number];
-    let matched: RuleRow | undefined;
-    for (const rule of rulesData) {
-      try {
-        // Convert inline flags like (?i) to JS RegExp flags
-        let pat = rule.pattern;
-        let flags = "";
-        const m = pat.match(/^\(\?([imsux]+)\)/);
-        if (m) { flags = m[1].replace(/[^imsu]/g, ""); pat = pat.slice(m[0].length); }
-        const re = new RegExp(pat, flags);
-        if (re.test(haystack)) { matched = rule; break; }
-      } catch (e) {
-        console.warn("[WAF] bad regex in rule", rule.name, e);
+
+    for (const rule of rulesData as RuleRow[]) {
+      let pat = rule.pattern;
+      let flags = "";
+      const m = pat.match(/^\(\?([imsux]+)\)/);
+      if (m) { flags = m[1].replace(/[^imsu]/g, ""); pat = pat.slice(m[0].length); }
+      let re: RegExp;
+      try { re = new RegExp(pat, flags); } catch (e) { console.warn("[WAF] bad regex", rule.name, e); continue; }
+
+      for (const layer of layers) {
+        if (re.test(layer.text)) {
+          if (!seenRuleIds.has(rule.id)) {
+            matched.push({
+              id: rule.id,
+              name: rule.name,
+              category: rule.category,
+              severity: rule.severity,
+              weight: Number(rule.weight ?? 1),
+              layer: layer.label,
+            });
+            seenRuleIds.add(rule.id);
+          }
+          break;
+        }
       }
     }
 
-    console.log(`[WAF] inspect: rules=${rulesData.length} haystack="${haystack}" matched=${matched?.name ?? "none"}`);
+    const threatScore = matched.reduce((s, r) => s + r.weight, 0);
+    const threshold = 0.5;
+    const blockedNow = threatScore >= threshold && matched.length > 0;
 
-    if (matched) {
-      const m = matched;
+    console.log(`[WAF] rules=${rulesData.length} layers=${layers.length} matched=${matched.length} score=${threatScore.toFixed(2)} blocked=${blockedNow}`);
 
+    if (blockedNow) {
+      // Pick highest-weight match as "primary"
+      const primary = [...matched].sort((a, b) => b.weight - a.weight)[0];
       const { data: log } = await supabaseAdmin.from("requests_log").insert({
         ip, method: data.method, path: data.path, payload: data.body ?? null, user_agent: userAgent ?? null,
-        matched_rule_id: m.id, matched_rule_name: m.name, category: m.category, severity: m.severity,
-        allowed: false, reason: `Matched rule: ${m.name}`,
+        matched_rule_id: primary.id, matched_rule_name: primary.name,
+        category: primary.category, severity: primary.severity,
+        allowed: false, reason: `Score ${threatScore.toFixed(2)} ≥ ${threshold}; primary: ${primary.name}`,
+        threat_score: threatScore,
+        matched_rules: matched as any,
       }).select("id").single();
 
-      // Auto-block: count recent blocks for this IP
-      const threshold = settings?.auto_block_threshold ?? 5;
+      const autoThreshold = settings?.auto_block_threshold ?? 5;
       const { count } = await supabaseAdmin.from("requests_log")
         .select("id", { count: "exact", head: true })
         .eq("ip", ip).eq("allowed", false)
         .gte("created_at", new Date(Date.now() - 10 * 60_000).toISOString());
-      if ((count ?? 0) >= threshold) {
+      if ((count ?? 0) >= autoThreshold) {
         await supabaseAdmin.from("blocked_ips").upsert(
           { ip, reason: `Auto-blocked after ${count} malicious requests`, blocked_until: new Date(Date.now() + 60 * 60_000).toISOString() },
           { onConflict: "ip" }
@@ -123,17 +205,24 @@ export const inspectRequest = createServerFn({ method: "POST" })
       }
 
       return {
-        allowed: false, matchedRuleId: m.id, matchedRuleName: m.name,
-        category: m.category, severity: m.severity, reason: `Matched rule: ${m.name}`,
+        allowed: false,
+        matchedRuleId: primary.id,
+        matchedRuleName: primary.name,
+        category: primary.category,
+        severity: primary.severity,
+        reason: `Threat score ${threatScore.toFixed(2)} exceeded threshold ${threshold}`,
+        threatScore,
+        matchedRules: matched,
         logId: log?.id,
       };
     }
 
     const { data: log } = await supabaseAdmin.from("requests_log").insert({
       ip, method: data.method, path: data.path, payload: data.body ?? null, user_agent: userAgent ?? null,
-      allowed: true,
+      allowed: true, threat_score: threatScore,
+      matched_rules: matched.length ? (matched as any) : null,
     }).select("id").single();
-    return { allowed: true, logId: log?.id };
+    return { allowed: true, threatScore, matchedRules: matched, logId: log?.id };
   });
 
 // ---------------- Public stats (for landing page) ----------------
