@@ -186,7 +186,7 @@ export const inspectRequest = createServerFn({ method: "POST" })
       const { data: log } = await supabaseAdmin.from("requests_log").insert({
         ip, method: data.method, path: data.path, payload: data.body ?? null, user_agent: userAgent ?? null,
         matched_rule_id: primary.id, matched_rule_name: primary.name,
-        category: primary.category, severity: primary.severity,
+        category: primary.category as any, severity: primary.severity,
         allowed: false, reason: `Score ${threatScore.toFixed(2)} ≥ ${threshold}; primary: ${primary.name}`,
         threat_score: threatScore,
         matched_rules: matched as any,
