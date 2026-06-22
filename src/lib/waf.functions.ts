@@ -86,12 +86,18 @@ export const inspectRequest = createServerFn({ method: "POST" })
     let matched: RuleRow | undefined;
     for (const rule of rulesData) {
       try {
-        const re = new RegExp(rule.pattern);
+        // Convert inline flags like (?i) to JS RegExp flags
+        let pat = rule.pattern;
+        let flags = "";
+        const m = pat.match(/^\(\?([imsux]+)\)/);
+        if (m) { flags = m[1].replace(/[^imsu]/g, ""); pat = pat.slice(m[0].length); }
+        const re = new RegExp(pat, flags);
         if (re.test(haystack)) { matched = rule; break; }
       } catch (e) {
         console.warn("[WAF] bad regex in rule", rule.name, e);
       }
     }
+
     console.log(`[WAF] inspect: rules=${rulesData.length} haystack="${haystack}" matched=${matched?.name ?? "none"}`);
 
     if (matched) {
