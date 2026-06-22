@@ -150,7 +150,7 @@ const dict: Record<Lang, Dict> = {
       ],
     },
     severities: { low: "منخفض", medium: "متوسط", high: "عالي", critical: "حرج" },
-    categories: { sqli: "SQL Injection", xss: "XSS", path_traversal: "Path Traversal", command_injection: "Command Injection", lfi: "LFI", rfi: "RFI", rate_limit: "Rate Limit", ip_block: "IP Block", other: "أخرى" },
+    categories: { sqli: "SQL Injection", xss: "XSS", dom_xss: "DOM XSS", path_traversal: "Path Traversal", command_injection: "Command Injection", lfi: "LFI", rfi: "RFI", ssti: "SSTI", xxe: "XXE", ssi: "SSI", file_upload: "رفع ملفات", file_inclusion: "تضمين ملفات", rate_limit: "Rate Limit", ip_block: "IP Block", other: "أخرى" },
     common: { save: "حفظ", cancel: "إلغاء", loading: "جاري التحميل...", error: "حدث خطأ", search: "بحث" },
   },
 };
