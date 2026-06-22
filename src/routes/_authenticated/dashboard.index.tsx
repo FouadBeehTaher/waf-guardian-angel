@@ -64,6 +64,10 @@ function OverviewPage() {
         <KpiCard icon={ListChecks} label={t.dashboard.kpis.activeRules} value={activeRules} />
       </div>
 
+      <div className="px-6 pb-6">
+        <AttackGlobe height={440} />
+      </div>
+
       <Card className="mx-6 mb-6 overflow-hidden">
         <div className="border-b border-border bg-card/60 px-4 py-3 font-semibold">{t.dashboard.recentAttacks}</div>
         {recent.length === 0 ? (
