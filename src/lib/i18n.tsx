@@ -6,7 +6,7 @@ const dict: Record<Lang, Dict> = {
   en: {
     appName: "SentinelWAF",
     tagline: "Web Application Firewall — Real-time threat detection & analytics",
-    nav: { home: "Home", docs: "Docs", simulator: "Simulator", dashboard: "Dashboard", signIn: "Sign in", signOut: "Sign out" },
+    nav: { home: "Home", docs: "Docs", simulator: "Simulator", references: "References", dashboard: "Dashboard", signIn: "Sign in", signOut: "Sign out" },
     hero: {
       title: "Block attacks before they reach your app",
       subtitle: "An open, regex-based Web Application Firewall with a real-time dashboard, customizable rules, and an attack simulator — built as a graduation project.",
