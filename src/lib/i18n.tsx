@@ -75,7 +75,7 @@ const dict: Record<Lang, Dict> = {
       ],
     },
     severities: { low: "Low", medium: "Medium", high: "High", critical: "Critical" },
-    categories: { sqli: "SQL Injection", xss: "XSS", path_traversal: "Path Traversal", command_injection: "Command Injection", lfi: "LFI", rfi: "RFI", rate_limit: "Rate Limit", ip_block: "IP Block", other: "Other" },
+    categories: { sqli: "SQL Injection", xss: "XSS", dom_xss: "DOM XSS", path_traversal: "Path Traversal", command_injection: "Command Injection", lfi: "LFI", rfi: "RFI", ssti: "SSTI", xxe: "XXE", ssi: "SSI", file_upload: "File Upload", file_inclusion: "File Inclusion", rate_limit: "Rate Limit", ip_block: "IP Block", other: "Other" },
     common: { save: "Save", cancel: "Cancel", loading: "Loading...", error: "Something went wrong", search: "Search" },
   },
   ar: {
