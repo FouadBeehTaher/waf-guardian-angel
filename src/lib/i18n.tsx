@@ -6,7 +6,7 @@ const dict: Record<Lang, Dict> = {
   en: {
     appName: "SentinelWAF",
     tagline: "Web Application Firewall — Real-time threat detection & analytics",
-    nav: { home: "Home", docs: "Docs", simulator: "Simulator", dashboard: "Dashboard", signIn: "Sign in", signOut: "Sign out" },
+    nav: { home: "Home", docs: "Docs", simulator: "Simulator", references: "References", dashboard: "Dashboard", signIn: "Sign in", signOut: "Sign out" },
     hero: {
       title: "Block attacks before they reach your app",
       subtitle: "An open, regex-based Web Application Firewall with a real-time dashboard, customizable rules, and an attack simulator — built as a graduation project.",
@@ -75,13 +75,13 @@ const dict: Record<Lang, Dict> = {
       ],
     },
     severities: { low: "Low", medium: "Medium", high: "High", critical: "Critical" },
-    categories: { sqli: "SQL Injection", xss: "XSS", path_traversal: "Path Traversal", command_injection: "Command Injection", lfi: "LFI", rfi: "RFI", rate_limit: "Rate Limit", ip_block: "IP Block", other: "Other" },
+    categories: { sqli: "SQL Injection", xss: "XSS", dom_xss: "DOM XSS", path_traversal: "Path Traversal", command_injection: "Command Injection", lfi: "LFI", rfi: "RFI", ssti: "SSTI", xxe: "XXE", ssi: "SSI", file_upload: "File Upload", file_inclusion: "File Inclusion", rate_limit: "Rate Limit", ip_block: "IP Block", other: "Other" },
     common: { save: "Save", cancel: "Cancel", loading: "Loading...", error: "Something went wrong", search: "Search" },
   },
   ar: {
     appName: "سنتنل WAF",
     tagline: "جدار حماية تطبيقات الويب — كشف وتحليل التهديدات في الوقت الفعلي",
-    nav: { home: "الرئيسية", docs: "التوثيق", simulator: "محاكي الهجمات", dashboard: "لوحة التحكم", signIn: "تسجيل الدخول", signOut: "تسجيل الخروج" },
+    nav: { home: "الرئيسية", docs: "التوثيق", simulator: "محاكي الهجمات", references: "المراجع", dashboard: "لوحة التحكم", signIn: "تسجيل الدخول", signOut: "تسجيل الخروج" },
     hero: {
       title: "احجب الهجمات قبل وصولها لتطبيقك",
       subtitle: "جدار حماية تطبيقات ويب مفتوح يعتمد على Regex، مع لوحة تحكم حية، قواعد قابلة للتخصيص، ومحاكي هجمات — كمشروع تخرج.",
@@ -150,7 +150,7 @@ const dict: Record<Lang, Dict> = {
       ],
     },
     severities: { low: "منخفض", medium: "متوسط", high: "عالي", critical: "حرج" },
-    categories: { sqli: "SQL Injection", xss: "XSS", path_traversal: "Path Traversal", command_injection: "Command Injection", lfi: "LFI", rfi: "RFI", rate_limit: "Rate Limit", ip_block: "IP Block", other: "أخرى" },
+    categories: { sqli: "SQL Injection", xss: "XSS", dom_xss: "DOM XSS", path_traversal: "Path Traversal", command_injection: "Command Injection", lfi: "LFI", rfi: "RFI", ssti: "SSTI", xxe: "XXE", ssi: "SSI", file_upload: "رفع ملفات", file_inclusion: "تضمين ملفات", rate_limit: "Rate Limit", ip_block: "IP Block", other: "أخرى" },
     common: { save: "حفظ", cancel: "إلغاء", loading: "جاري التحميل...", error: "حدث خطأ", search: "بحث" },
   },
 };
@@ -158,7 +158,7 @@ const dict: Record<Lang, Dict> = {
 type Dict = {
   appName: string;
   tagline: string;
-  nav: { home: string; docs: string; simulator: string; dashboard: string; signIn: string; signOut: string };
+  nav: { home: string; docs: string; simulator: string; references: string; dashboard: string; signIn: string; signOut: string };
   hero: { title: string; subtitle: string; cta: string; ctaSecondary: string; stats: { blocked: string; total: string; rules: string } };
   features: { title: string; items: { t: string; d: string }[] };
   arch: { title: string; subtitle: string };
@@ -177,7 +177,7 @@ type Dict = {
   auth: { title: string; email: string; password: string; signIn: string; signUp: string; google: string; switchToSignUp: string; switchToSignIn: string; firstUserNote: string; signOut: string; notAdmin: string };
   docs: { title: string; sections: { t: string; d: string }[] };
   severities: { low: string; medium: string; high: string; critical: string };
-  categories: { sqli: string; xss: string; path_traversal: string; command_injection: string; lfi: string; rfi: string; rate_limit: string; ip_block: string; other: string };
+  categories: { sqli: string; xss: string; dom_xss: string; path_traversal: string; command_injection: string; lfi: string; rfi: string; ssti: string; xxe: string; ssi: string; file_upload: string; file_inclusion: string; rate_limit: string; ip_block: string; other: string };
   common: { save: string; cancel: string; loading: string; error: string; search: string };
 };
 

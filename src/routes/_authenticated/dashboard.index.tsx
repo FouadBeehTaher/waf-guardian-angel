@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AttackGlobe } from "@/components/AttackGlobe";
 import { PageHeader } from "./dashboard";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -61,6 +62,10 @@ function OverviewPage() {
         <KpiCard icon={TrendingUp} label={t.dashboard.kpis.blockRate} value={`${stats.blockRate}%`} />
         <KpiCard icon={AlertTriangle} label={t.dashboard.kpis.topThreat} value={stats.topThreat} mono />
         <KpiCard icon={ListChecks} label={t.dashboard.kpis.activeRules} value={activeRules} />
+      </div>
+
+      <div className="px-6 pb-6">
+        <AttackGlobe height={440} />
       </div>
 
       <Card className="mx-6 mb-6 overflow-hidden">
