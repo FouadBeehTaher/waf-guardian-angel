@@ -47,11 +47,13 @@ export type Database = {
           ip: string
           matched_rule_id: string | null
           matched_rule_name: string | null
+          matched_rules: Json | null
           method: string
           path: string
           payload: string | null
           reason: string | null
           severity: Database["public"]["Enums"]["attack_severity"] | null
+          threat_score: number
           user_agent: string | null
         }
         Insert: {
@@ -62,11 +64,13 @@ export type Database = {
           ip: string
           matched_rule_id?: string | null
           matched_rule_name?: string | null
+          matched_rules?: Json | null
           method: string
           path: string
           payload?: string | null
           reason?: string | null
           severity?: Database["public"]["Enums"]["attack_severity"] | null
+          threat_score?: number
           user_agent?: string | null
         }
         Update: {
@@ -77,11 +81,13 @@ export type Database = {
           ip?: string
           matched_rule_id?: string | null
           matched_rule_name?: string | null
+          matched_rules?: Json | null
           method?: string
           path?: string
           payload?: string | null
           reason?: string | null
           severity?: Database["public"]["Enums"]["attack_severity"] | null
+          threat_score?: number
           user_agent?: string | null
         }
         Relationships: [
@@ -106,6 +112,7 @@ export type Database = {
           pattern: string
           severity: Database["public"]["Enums"]["attack_severity"]
           updated_at: string
+          weight: number
         }
         Insert: {
           category: Database["public"]["Enums"]["attack_category"]
@@ -118,6 +125,7 @@ export type Database = {
           pattern: string
           severity?: Database["public"]["Enums"]["attack_severity"]
           updated_at?: string
+          weight?: number
         }
         Update: {
           category?: Database["public"]["Enums"]["attack_category"]
@@ -130,6 +138,7 @@ export type Database = {
           pattern?: string
           severity?: Database["public"]["Enums"]["attack_severity"]
           updated_at?: string
+          weight?: number
         }
         Relationships: []
       }
@@ -211,6 +220,12 @@ export type Database = {
         | "rate_limit"
         | "ip_block"
         | "other"
+        | "ssti"
+        | "xxe"
+        | "dom_xss"
+        | "ssi"
+        | "file_upload"
+        | "file_inclusion"
       attack_severity: "low" | "medium" | "high" | "critical"
     }
     CompositeTypes: {
@@ -350,6 +365,12 @@ export const Constants = {
         "rate_limit",
         "ip_block",
         "other",
+        "ssti",
+        "xxe",
+        "dom_xss",
+        "ssi",
+        "file_upload",
+        "file_inclusion",
       ],
       attack_severity: ["low", "medium", "high", "critical"],
     },
