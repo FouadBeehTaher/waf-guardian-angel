@@ -158,7 +158,7 @@ const dict: Record<Lang, Dict> = {
 type Dict = {
   appName: string;
   tagline: string;
-  nav: { home: string; docs: string; simulator: string; dashboard: string; signIn: string; signOut: string };
+  nav: { home: string; docs: string; simulator: string; references: string; dashboard: string; signIn: string; signOut: string };
   hero: { title: string; subtitle: string; cta: string; ctaSecondary: string; stats: { blocked: string; total: string; rules: string } };
   features: { title: string; items: { t: string; d: string }[] };
   arch: { title: string; subtitle: string };
