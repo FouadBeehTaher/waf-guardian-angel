@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 
 export type Lang = "en" | "ar";
 
-const dict = {
+const dict: Record<Lang, Dict> = {
   en: {
     appName: "SentinelWAF",
     tagline: "Web Application Firewall — Real-time threat detection & analytics",
@@ -153,9 +153,34 @@ const dict = {
     categories: { sqli: "SQL Injection", xss: "XSS", path_traversal: "Path Traversal", command_injection: "Command Injection", lfi: "LFI", rfi: "RFI", rate_limit: "Rate Limit", ip_block: "IP Block", other: "أخرى" },
     common: { save: "حفظ", cancel: "إلغاء", loading: "جاري التحميل...", error: "حدث خطأ", search: "بحث" },
   },
-} as const;
+};
 
-type Dict = typeof dict.en;
+type Dict = {
+  appName: string;
+  tagline: string;
+  nav: { home: string; docs: string; simulator: string; dashboard: string; signIn: string; signOut: string };
+  hero: { title: string; subtitle: string; cta: string; ctaSecondary: string; stats: { blocked: string; total: string; rules: string } };
+  features: { title: string; items: { t: string; d: string }[] };
+  arch: { title: string; subtitle: string };
+  dashboard: {
+    title: string; overview: string; logs: string; rules: string; blockedIps: string; analytics: string; settings: string;
+    kpis: { total: string; blocked: string; allowed: string; topThreat: string; activeRules: string; blockRate: string };
+    live: string; recentAttacks: string; noAttacks: string;
+    time: string; ip: string; method: string; path: string; category: string; severity: string; status: string; rule: string; reason: string; payload: string;
+    allowed: string; blocked: string; all: string; filterByIp: string; filterByCategory: string;
+  };
+  rules: { add: string; edit: string; delete: string; name: string; description: string; pattern: string; enabled: string; builtin: string; confirmDelete: string; saved: string; deleted: string };
+  blocked: { add: string; until: string; manual: string; auto: string; unblock: string; noBlocked: string };
+  analytics: { requestsOverTime: string; byCategory: string; bySeverity: string; topAttackers: string; topPaths: string; last24h: string };
+  settings: { title: string; enabled: string; rateLimit: string; autoBlock: string; save: string; saved: string; language: string; theme: string; dark: string; light: string };
+  sim: { title: string; subtitle: string; method: string; path: string; body: string; run: string; presets: string; result: string; noRun: string; verdictBlocked: string; verdictAllowed: string; matched: string; noMatch: string };
+  auth: { title: string; email: string; password: string; signIn: string; signUp: string; google: string; switchToSignUp: string; switchToSignIn: string; firstUserNote: string; signOut: string; notAdmin: string };
+  docs: { title: string; sections: { t: string; d: string }[] };
+  severities: { low: string; medium: string; high: string; critical: string };
+  categories: { sqli: string; xss: string; path_traversal: string; command_injection: string; lfi: string; rfi: string; rate_limit: string; ip_block: string; other: string };
+  common: { save: string; cancel: string; loading: string; error: string; search: string };
+};
+
 
 interface I18nCtx {
   lang: Lang;
