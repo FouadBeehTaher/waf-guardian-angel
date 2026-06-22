@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AttackGlobe } from "@/components/AttackGlobe";
 import { PageHeader } from "./dashboard";
 import type { Database } from "@/integrations/supabase/types";
 
