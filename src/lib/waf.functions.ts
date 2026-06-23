@@ -37,6 +37,33 @@ const inspectSchema = z.object({
   userAgent: z.string().max(512).optional(),
 });
 
+// ---------------- ReDoS guard ----------------
+// Reject patterns with obvious catastrophic-backtracking shapes (nested
+// quantifiers like (a+)+, (.*)*, (a|a)+, etc.) before they ever run.
+const UNSAFE_PATTERN_HEURISTICS: RegExp[] = [
+  /\([^()]*[+*][^()]*\)[+*]/,            // (x+)+ or (x*)*
+  /\([^()]*\{\d+,?\d*\}[^()]*\)\{\d+,?\d*\}/, // ({n,}){n,}
+  /\((?:[^()|]+\|)+[^()|]+\)[+*]/,       // (a|a|...)+
+];
+export function isPatternSafe(pattern: string): { ok: true } | { ok: false; reason: string } {
+  if (pattern.length > 512) return { ok: false, reason: "Pattern exceeds 512 characters" };
+  for (const h of UNSAFE_PATTERN_HEURISTICS) {
+    if (h.test(pattern)) return { ok: false, reason: "Pattern contains nested quantifiers (potential ReDoS)" };
+  }
+  return { ok: true };
+}
+
+// Run regex.test with a wall-clock budget. JS cannot truly abort regex,
+// but we record overruns and disable the offending rule for this request.
+const REGEX_BUDGET_MS = 25;
+function safeTest(re: RegExp, text: string): { matched: boolean; tookMs: number; overran: boolean } {
+  const start = Date.now();
+  let matched = false;
+  try { matched = re.test(text); } catch { matched = false; }
+  const tookMs = Date.now() - start;
+  return { matched, tookMs, overran: tookMs > REGEX_BUDGET_MS };
+}
+
 // Fake IP for the simulator — derived from a hash of session-like data
 function pseudoIp(seed: string): string {
   let h = 0;
