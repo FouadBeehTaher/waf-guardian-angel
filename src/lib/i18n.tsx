@@ -161,7 +161,6 @@ type Dict = {
   nav: { home: string; docs: string; simulator: string; references: string; dashboard: string; signIn: string; signOut: string };
   hero: { title: string; subtitle: string; cta: string; ctaSecondary: string; stats: { blocked: string; total: string; rules: string } };
   features: { title: string; items: { t: string; d: string }[] };
-  arch: { title: string; subtitle: string };
   dashboard: {
     title: string; overview: string; logs: string; rules: string; blockedIps: string; analytics: string; settings: string;
     kpis: { total: string; blocked: string; allowed: string; topThreat: string; activeRules: string; blockRate: string };
