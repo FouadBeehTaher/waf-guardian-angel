@@ -129,9 +129,12 @@ export const inspectRequest = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { getRequestIP, getRequestHeader } = await import("@tanstack/react-start/server");
 
+    // SECURITY: do NOT trust X-Forwarded-For — any client can spoof it and
+    // bypass blocklist/auto-block enforcement. Use the raw socket IP only;
+    // when unavailable (local dev / no proxy), derive a stable pseudo-IP.
     let ip = "0.0.0.0";
     try {
-      ip = getRequestIP({ xForwardedFor: true }) || pseudoIp(data.path + (data.body ?? ""));
+      ip = getRequestIP() || pseudoIp(data.path + (data.body ?? ""));
     } catch {
       ip = pseudoIp(data.path + (data.body ?? ""));
     }
