@@ -266,19 +266,18 @@ export const inspectRequest = createServerFn({ method: "POST" })
   });
 
 // ---------------- Public stats (for landing page) ----------------
+// Aggregated counts only — no row data. The previous SECURITY DEFINER RPC
+// was removed to avoid exposing a public-callable definer function.
 export const getPublicStats = createServerFn({ method: "GET" }).handler(async () => {
-  const { createClient } = await import("@supabase/supabase-js");
-  const sb = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false, storage: undefined } }
-  );
-  const { data, error } = await sb.rpc("get_public_stats");
-  if (error || !data?.[0]) return { total_blocked: 0, total_requests: 0, active_rules: 0 };
-  const row = data[0] as any;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const [blocked, requests, rules] = await Promise.all([
+    supabaseAdmin.from("requests_log").select("id", { count: "exact", head: true }).eq("allowed", false),
+    supabaseAdmin.from("requests_log").select("id", { count: "exact", head: true }),
+    supabaseAdmin.from("rules").select("id", { count: "exact", head: true }).eq("enabled", true),
+  ]);
   return {
-    total_blocked: Number(row.total_blocked ?? 0),
-    total_requests: Number(row.total_requests ?? 0),
-    active_rules: Number(row.active_rules ?? 0),
+    total_blocked: blocked.count ?? 0,
+    total_requests: requests.count ?? 0,
+    active_rules: rules.count ?? 0,
   };
 });
