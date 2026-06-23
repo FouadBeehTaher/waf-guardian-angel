@@ -25,7 +25,7 @@ const dict: Record<Lang, Dict> = {
         { t: "Attack Simulator", d: "Test the WAF with built-in payloads or your own — see exactly which rule fires." },
       ],
     },
-    arch: { title: "Architecture", subtitle: "How requests flow through SentinelWAF" },
+    
     dashboard: {
       title: "Dashboard", overview: "Overview", logs: "Request Logs", rules: "Rules", blockedIps: "Blocked IPs",
       analytics: "Analytics", settings: "Settings",
