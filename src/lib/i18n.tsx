@@ -100,7 +100,7 @@ const dict: Record<Lang, Dict> = {
         { t: "محاكي هجمات", d: "اختبر الـ WAF بـ payloads جاهزة أو خاصة بك — وشاهد القاعدة التي تطبّق." },
       ],
     },
-    arch: { title: "البنية المعمارية", subtitle: "كيف تمر الطلبات عبر سنتنل WAF" },
+    
     dashboard: {
       title: "لوحة التحكم", overview: "نظرة عامة", logs: "سجل الطلبات", rules: "القواعد", blockedIps: "IPs المحظورة",
       analytics: "التحليلات", settings: "الإعدادات",
