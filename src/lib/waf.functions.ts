@@ -37,6 +37,33 @@ const inspectSchema = z.object({
   userAgent: z.string().max(512).optional(),
 });
 
+// ---------------- ReDoS guard ----------------
+// Reject patterns with obvious catastrophic-backtracking shapes (nested
+// quantifiers like (a+)+, (.*)*, (a|a)+, etc.) before they ever run.
+const UNSAFE_PATTERN_HEURISTICS: RegExp[] = [
+  /\([^()]*[+*][^()]*\)[+*]/,            // (x+)+ or (x*)*
+  /\([^()]*\{\d+,?\d*\}[^()]*\)\{\d+,?\d*\}/, // ({n,}){n,}
+  /\((?:[^()|]+\|)+[^()|]+\)[+*]/,       // (a|a|...)+
+];
+export function isPatternSafe(pattern: string): { ok: true } | { ok: false; reason: string } {
+  if (pattern.length > 512) return { ok: false, reason: "Pattern exceeds 512 characters" };
+  for (const h of UNSAFE_PATTERN_HEURISTICS) {
+    if (h.test(pattern)) return { ok: false, reason: "Pattern contains nested quantifiers (potential ReDoS)" };
+  }
+  return { ok: true };
+}
+
+// Run regex.test with a wall-clock budget. JS cannot truly abort regex,
+// but we record overruns and disable the offending rule for this request.
+const REGEX_BUDGET_MS = 25;
+function safeTest(re: RegExp, text: string): { matched: boolean; tookMs: number; overran: boolean } {
+  const start = Date.now();
+  let matched = false;
+  try { matched = re.test(text); } catch { matched = false; }
+  const tookMs = Date.now() - start;
+  return { matched, tookMs, overran: tookMs > REGEX_BUDGET_MS };
+}
+
 // Fake IP for the simulator — derived from a hash of session-like data
 function pseudoIp(seed: string): string {
   let h = 0;
@@ -102,9 +129,12 @@ export const inspectRequest = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { getRequestIP, getRequestHeader } = await import("@tanstack/react-start/server");
 
+    // SECURITY: do NOT trust X-Forwarded-For — any client can spoof it and
+    // bypass blocklist/auto-block enforcement. Use the raw socket IP only;
+    // when unavailable (local dev / no proxy), derive a stable pseudo-IP.
     let ip = "0.0.0.0";
     try {
-      ip = getRequestIP({ xForwardedFor: true }) || pseudoIp(data.path + (data.body ?? ""));
+      ip = getRequestIP() || pseudoIp(data.path + (data.body ?? ""));
     } catch {
       ip = pseudoIp(data.path + (data.body ?? ""));
     }
@@ -153,11 +183,21 @@ export const inspectRequest = createServerFn({ method: "POST" })
       let flags = "";
       const m = pat.match(/^\(\?([imsux]+)\)/);
       if (m) { flags = m[1].replace(/[^imsu]/g, ""); pat = pat.slice(m[0].length); }
+
+      // ReDoS guard: skip patterns with known catastrophic-backtracking shapes
+      const safety = isPatternSafe(pat);
+      if (!safety.ok) { console.warn(`[WAF] skipping unsafe rule "${rule.name}": ${safety.reason}`); continue; }
+
       let re: RegExp;
       try { re = new RegExp(pat, flags); } catch (e) { console.warn("[WAF] bad regex", rule.name, e); continue; }
 
       for (const layer of layers) {
-        if (re.test(layer.text)) {
+        const { matched: hit, overran } = safeTest(re, layer.text);
+        if (overran) {
+          console.warn(`[WAF] rule "${rule.name}" exceeded ${REGEX_BUDGET_MS}ms budget on ${layer.label}; skipping further layers`);
+          break;
+        }
+        if (hit) {
           if (!seenRuleIds.has(rule.id)) {
             matched.push({
               id: rule.id,
@@ -226,19 +266,18 @@ export const inspectRequest = createServerFn({ method: "POST" })
   });
 
 // ---------------- Public stats (for landing page) ----------------
+// Aggregated counts only — no row data. The previous SECURITY DEFINER RPC
+// was removed to avoid exposing a public-callable definer function.
 export const getPublicStats = createServerFn({ method: "GET" }).handler(async () => {
-  const { createClient } = await import("@supabase/supabase-js");
-  const sb = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false, storage: undefined } }
-  );
-  const { data, error } = await sb.rpc("get_public_stats");
-  if (error || !data?.[0]) return { total_blocked: 0, total_requests: 0, active_rules: 0 };
-  const row = data[0] as any;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const [blocked, requests, rules] = await Promise.all([
+    supabaseAdmin.from("requests_log").select("id", { count: "exact", head: true }).eq("allowed", false),
+    supabaseAdmin.from("requests_log").select("id", { count: "exact", head: true }),
+    supabaseAdmin.from("rules").select("id", { count: "exact", head: true }).eq("enabled", true),
+  ]);
   return {
-    total_blocked: Number(row.total_blocked ?? 0),
-    total_requests: Number(row.total_requests ?? 0),
-    active_rules: Number(row.active_rules ?? 0),
+    total_blocked: blocked.count ?? 0,
+    total_requests: requests.count ?? 0,
+    active_rules: rules.count ?? 0,
   };
 });

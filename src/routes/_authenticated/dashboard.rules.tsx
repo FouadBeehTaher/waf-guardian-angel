@@ -52,6 +52,9 @@ function RulesPage() {
       severity: (editing.severity ?? "medium") as Sev, enabled: editing.enabled ?? true,
     };
     try { new RegExp(payload.pattern); } catch { toast.error("Invalid regex pattern"); return; }
+    const { isPatternSafe } = await import("@/lib/waf.functions");
+    const safety = isPatternSafe(payload.pattern);
+    if (!safety.ok) { toast.error(`Unsafe pattern: ${safety.reason}`); return; }
     if (editing.id) {
       const { error } = await supabase.from("rules").update(payload).eq("id", editing.id);
       if (error) return toast.error(error.message);

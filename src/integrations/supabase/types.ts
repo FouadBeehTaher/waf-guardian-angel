@@ -192,21 +192,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_public_stats: {
-        Args: never
-        Returns: {
-          active_rules: number
-          total_blocked: number
-          total_requests: number
-        }[]
-      }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       app_role: "admin" | "user"
