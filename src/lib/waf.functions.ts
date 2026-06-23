@@ -183,11 +183,21 @@ export const inspectRequest = createServerFn({ method: "POST" })
       let flags = "";
       const m = pat.match(/^\(\?([imsux]+)\)/);
       if (m) { flags = m[1].replace(/[^imsu]/g, ""); pat = pat.slice(m[0].length); }
+
+      // ReDoS guard: skip patterns with known catastrophic-backtracking shapes
+      const safety = isPatternSafe(pat);
+      if (!safety.ok) { console.warn(`[WAF] skipping unsafe rule "${rule.name}": ${safety.reason}`); continue; }
+
       let re: RegExp;
       try { re = new RegExp(pat, flags); } catch (e) { console.warn("[WAF] bad regex", rule.name, e); continue; }
 
       for (const layer of layers) {
-        if (re.test(layer.text)) {
+        const { matched: hit, overran } = safeTest(re, layer.text);
+        if (overran) {
+          console.warn(`[WAF] rule "${rule.name}" exceeded ${REGEX_BUDGET_MS}ms budget on ${layer.label}; skipping further layers`);
+          break;
+        }
+        if (hit) {
           if (!seenRuleIds.has(rule.id)) {
             matched.push({
               id: rule.id,
