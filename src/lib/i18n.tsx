@@ -25,7 +25,7 @@ const dict: Record<Lang, Dict> = {
         { t: "Attack Simulator", d: "Test the WAF with built-in payloads or your own — see exactly which rule fires." },
       ],
     },
-    arch: { title: "Architecture", subtitle: "How requests flow through SentinelWAF" },
+    
     dashboard: {
       title: "Dashboard", overview: "Overview", logs: "Request Logs", rules: "Rules", blockedIps: "Blocked IPs",
       analytics: "Analytics", settings: "Settings",
@@ -100,7 +100,7 @@ const dict: Record<Lang, Dict> = {
         { t: "محاكي هجمات", d: "اختبر الـ WAF بـ payloads جاهزة أو خاصة بك — وشاهد القاعدة التي تطبّق." },
       ],
     },
-    arch: { title: "البنية المعمارية", subtitle: "كيف تمر الطلبات عبر سنتنل WAF" },
+    
     dashboard: {
       title: "لوحة التحكم", overview: "نظرة عامة", logs: "سجل الطلبات", rules: "القواعد", blockedIps: "IPs المحظورة",
       analytics: "التحليلات", settings: "الإعدادات",
@@ -161,7 +161,6 @@ type Dict = {
   nav: { home: string; docs: string; simulator: string; references: string; dashboard: string; signIn: string; signOut: string };
   hero: { title: string; subtitle: string; cta: string; ctaSecondary: string; stats: { blocked: string; total: string; rules: string } };
   features: { title: string; items: { t: string; d: string }[] };
-  arch: { title: string; subtitle: string };
   dashboard: {
     title: string; overview: string; logs: string; rules: string; blockedIps: string; analytics: string; settings: string;
     kpis: { total: string; blocked: string; allowed: string; topThreat: string; activeRules: string; blockRate: string };

@@ -91,37 +91,6 @@ function Index() {
         </div>
       </section>
 
-      {/* Architecture */}
-      <section className="border-t border-border/60 bg-card/30">
-        <div className="container mx-auto px-4 py-20">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-3xl font-bold">{t.arch.title}</h2>
-            <p className="mt-2 text-muted-foreground">{t.arch.subtitle}</p>
-          </div>
-          <Card className="mx-auto mt-10 max-w-4xl overflow-x-auto bg-background/60 p-6 font-mono text-xs leading-relaxed text-muted-foreground md:text-sm">
-            <pre className="whitespace-pre">{`  Client / Simulator
-        │  HTTP request
-        ▼
-  ┌──────────────────────────────┐
-  │      WAF Engine              │       ┌────────────────────┐
-  │  • Settings check            │──▶ allowed ─▶│ Protected Backend │
-  │  • IP blocklist              │       └────────────────────┘
-  │  • Regex rule matching       │
-  │  • Auto-block escalation     │──▶ blocked ─▶  403 Forbidden
-  └──────────┬───────────────────┘
-             │  every request logged
-             ▼
-  ┌──────────────────────────────┐
-  │  PostgreSQL (Lovable Cloud)  │
-  │  rules · requests_log        │
-  │  blocked_ips · settings      │
-  └──────────┬───────────────────┘
-             │  realtime stream
-             ▼
-       Admin Dashboard`}</pre>
-          </Card>
-        </div>
-      </section>
 
       <footer className="border-t border-border/60 py-8 text-center text-sm text-muted-foreground">
         <div className="flex items-center justify-center gap-2">
