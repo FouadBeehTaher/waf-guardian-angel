@@ -75,6 +75,61 @@ function pseudoIp(seed: string): string {
   return `${a}.${b}.${c}.${d}`;
 }
 
+// ---------------- Telegram notifier (fire-and-forget) ----------------
+async function notifyTelegram(text: string): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: text.length > 3900 ? text.slice(0, 3900) + "…" : text,
+        parse_mode: "HTML",
+        disable_web_page_preview: true,
+      }),
+    });
+  } catch (e) {
+    console.warn("[WAF] telegram notify failed:", e);
+  }
+}
+
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function formatEvent(opts: {
+  status: "ALLOWED" | "BLOCKED";
+  ip: string;
+  method: string;
+  path: string;
+  body?: string;
+  userAgent?: string;
+  reason?: string;
+  threatScore: number;
+  category?: string;
+  severity?: string;
+  matched: MatchedRule[];
+}): string {
+  const icon = opts.status === "BLOCKED" ? "🚫" : "✅";
+  const lines = [
+    `${icon} <b>${opts.status}</b>`,
+    `<b>IP:</b> <code>${esc(opts.ip)}</code>`,
+    `<b>Req:</b> <code>${esc(opts.method)} ${esc(opts.path)}</code>`,
+    `<b>Score:</b> ${opts.threatScore.toFixed(2)}`,
+  ];
+  if (opts.category) lines.push(`<b>Category:</b> ${esc(opts.category)}`);
+  if (opts.severity) lines.push(`<b>Severity:</b> ${esc(opts.severity)}`);
+  if (opts.reason) lines.push(`<b>Reason:</b> ${esc(opts.reason)}`);
+  if (opts.matched.length)
+    lines.push(`<b>Rules:</b> ${opts.matched.map((m) => esc(m.name)).join(", ")}`);
+  if (opts.userAgent) lines.push(`<b>UA:</b> <code>${esc(opts.userAgent.slice(0, 200))}</code>`);
+  if (opts.body) lines.push(`<b>Body:</b> <code>${esc(opts.body.slice(0, 500))}</code>`);
+  return lines.join("\n");
+}
+
 // ---------------- Multi-pass decoding (anti-evasion) ----------------
 function safeDecode(fn: () => string): string | null {
   try { return fn(); } catch { return null; }
@@ -159,6 +214,10 @@ export const inspectRequest = createServerFn({ method: "POST" })
         ip, method: data.method, path: data.path, payload: data.body ?? null, user_agent: userAgent ?? null,
         allowed: true, reason: "WAF disabled", threat_score: 0,
       }).select("id").single();
+      void notifyTelegram(formatEvent({
+        status: "ALLOWED", ip, method: data.method, path: data.path, body: data.body, userAgent,
+        reason: "WAF disabled", threatScore: 0, matched: [],
+      }));
       return { allowed: true, threatScore: 0, matchedRules: [], logId: log?.id };
     }
 
@@ -167,6 +226,10 @@ export const inspectRequest = createServerFn({ method: "POST" })
         ip, method: data.method, path: data.path, payload: data.body ?? null, user_agent: userAgent ?? null,
         allowed: false, category: "ip_block", severity: "high", reason: "IP is on blocklist", threat_score: 10,
       }).select("id").single();
+      void notifyTelegram(formatEvent({
+        status: "BLOCKED", ip, method: data.method, path: data.path, body: data.body, userAgent,
+        reason: "IP is on blocklist", category: "ip_block", severity: "high", threatScore: 10, matched: [],
+      }));
       return { allowed: false, category: "ip_block", severity: "high", reason: "IP is on blocklist", threatScore: 10, matchedRules: [], logId: log?.id };
     }
 
@@ -242,7 +305,14 @@ export const inspectRequest = createServerFn({ method: "POST" })
           { ip, reason: `Auto-blocked after ${count} malicious requests`, blocked_until: new Date(Date.now() + 60 * 60_000).toISOString() },
           { onConflict: "ip" }
         );
+        void notifyTelegram(`⛔ <b>IP auto-blocked</b>\n<b>IP:</b> <code>${esc(ip)}</code>\n<b>After:</b> ${count} malicious requests in 10m`);
       }
+
+      void notifyTelegram(formatEvent({
+        status: "BLOCKED", ip, method: data.method, path: data.path, body: data.body, userAgent,
+        reason: `Score ${threatScore.toFixed(2)} ≥ ${threshold}; primary: ${primary.name}`,
+        category: primary.category, severity: primary.severity, threatScore, matched,
+      }));
 
       return {
         allowed: false,
@@ -262,6 +332,10 @@ export const inspectRequest = createServerFn({ method: "POST" })
       allowed: true, threat_score: threatScore,
       matched_rules: matched.length ? (matched as any) : null,
     }).select("id").single();
+    void notifyTelegram(formatEvent({
+      status: "ALLOWED", ip, method: data.method, path: data.path, body: data.body, userAgent,
+      threatScore, matched,
+    }));
     return { allowed: true, threatScore, matchedRules: matched, logId: log?.id };
   });
 
