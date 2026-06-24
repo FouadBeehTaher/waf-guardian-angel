@@ -47,6 +47,7 @@ const dict: Record<Lang, Dict> = {
       title: "WAF Settings", enabled: "WAF Enabled", rateLimit: "Rate limit (requests/min per IP)",
       autoBlock: "Auto-block after N malicious requests", save: "Save changes", saved: "Settings saved",
       language: "Language", theme: "Theme", dark: "Dark", light: "Light",
+      testTelegram: "Test Telegram", testTelegramSent: "Test message sent!", testTelegramFailed: "Failed to send test message",
     },
     sim: {
       title: "Attack Simulator", subtitle: "Send a request through the WAF and see whether it gets blocked.",
