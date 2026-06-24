@@ -123,6 +123,7 @@ const dict: Record<Lang, Dict> = {
       title: "إعدادات الـ WAF", enabled: "تفعيل الـ WAF", rateLimit: "الحد الأقصى (طلب/دقيقة لكل IP)",
       autoBlock: "حظر تلقائي بعد N طلب خبيث", save: "حفظ التغييرات", saved: "تم حفظ الإعدادات",
       language: "اللغة", theme: "المظهر", dark: "داكن", light: "فاتح",
+      testTelegram: "اختبار Telegram", testTelegramSent: "تم إرسال رسالة الاختبار!", testTelegramFailed: "فشل إرسال رسالة الاختبار",
     },
     sim: {
       title: "محاكي الهجمات", subtitle: "أرسل طلباً عبر الـ WAF وشاهد هل يُحظر أم لا.",
