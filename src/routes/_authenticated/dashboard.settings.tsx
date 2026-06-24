@@ -9,6 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { PageHeader } from "./dashboard";
 import { toast } from "sonner";
+import { testTelegram } from "@/lib/waf.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { Send } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard/settings")({
   component: SettingsPage,
