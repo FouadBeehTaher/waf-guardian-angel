@@ -305,7 +305,14 @@ export const inspectRequest = createServerFn({ method: "POST" })
           { ip, reason: `Auto-blocked after ${count} malicious requests`, blocked_until: new Date(Date.now() + 60 * 60_000).toISOString() },
           { onConflict: "ip" }
         );
+        void notifyTelegram(`⛔ <b>IP auto-blocked</b>\n<b>IP:</b> <code>${esc(ip)}</code>\n<b>After:</b> ${count} malicious requests in 10m`);
       }
+
+      void notifyTelegram(formatEvent({
+        status: "BLOCKED", ip, method: data.method, path: data.path, body: data.body, userAgent,
+        reason: `Score ${threatScore.toFixed(2)} ≥ ${threshold}; primary: ${primary.name}`,
+        category: primary.category, severity: primary.severity, threatScore, matched,
+      }));
 
       return {
         allowed: false,
@@ -325,6 +332,10 @@ export const inspectRequest = createServerFn({ method: "POST" })
       allowed: true, threat_score: threatScore,
       matched_rules: matched.length ? (matched as any) : null,
     }).select("id").single();
+    void notifyTelegram(formatEvent({
+      status: "ALLOWED", ip, method: data.method, path: data.path, body: data.body, userAgent,
+      threatScore, matched,
+    }));
     return { allowed: true, threatScore, matchedRules: matched, logId: log?.id };
   });
 
