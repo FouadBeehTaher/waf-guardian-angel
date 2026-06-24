@@ -47,6 +47,7 @@ const dict: Record<Lang, Dict> = {
       title: "WAF Settings", enabled: "WAF Enabled", rateLimit: "Rate limit (requests/min per IP)",
       autoBlock: "Auto-block after N malicious requests", save: "Save changes", saved: "Settings saved",
       language: "Language", theme: "Theme", dark: "Dark", light: "Light",
+      testTelegram: "Test Telegram", testTelegramSent: "Test message sent!", testTelegramFailed: "Failed to send test message",
     },
     sim: {
       title: "Attack Simulator", subtitle: "Send a request through the WAF and see whether it gets blocked.",
@@ -122,6 +123,7 @@ const dict: Record<Lang, Dict> = {
       title: "إعدادات الـ WAF", enabled: "تفعيل الـ WAF", rateLimit: "الحد الأقصى (طلب/دقيقة لكل IP)",
       autoBlock: "حظر تلقائي بعد N طلب خبيث", save: "حفظ التغييرات", saved: "تم حفظ الإعدادات",
       language: "اللغة", theme: "المظهر", dark: "داكن", light: "فاتح",
+      testTelegram: "اختبار Telegram", testTelegramSent: "تم إرسال رسالة الاختبار!", testTelegramFailed: "فشل إرسال رسالة الاختبار",
     },
     sim: {
       title: "محاكي الهجمات", subtitle: "أرسل طلباً عبر الـ WAF وشاهد هل يُحظر أم لا.",
@@ -171,7 +173,7 @@ type Dict = {
   rules: { add: string; edit: string; delete: string; name: string; description: string; pattern: string; enabled: string; builtin: string; confirmDelete: string; saved: string; deleted: string };
   blocked: { add: string; until: string; manual: string; auto: string; unblock: string; noBlocked: string };
   analytics: { requestsOverTime: string; byCategory: string; bySeverity: string; topAttackers: string; topPaths: string; last24h: string };
-  settings: { title: string; enabled: string; rateLimit: string; autoBlock: string; save: string; saved: string; language: string; theme: string; dark: string; light: string };
+  settings: { title: string; enabled: string; rateLimit: string; autoBlock: string; save: string; saved: string; language: string; theme: string; dark: string; light: string; testTelegram: string; testTelegramSent: string; testTelegramFailed: string };
   sim: { title: string; subtitle: string; method: string; path: string; body: string; run: string; presets: string; result: string; noRun: string; verdictBlocked: string; verdictAllowed: string; matched: string; noMatch: string };
   auth: { title: string; email: string; password: string; signIn: string; signUp: string; google: string; switchToSignUp: string; switchToSignIn: string; firstUserNote: string; signOut: string; notAdmin: string };
   docs: { title: string; sections: { t: string; d: string }[] };
