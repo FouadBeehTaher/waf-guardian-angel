@@ -214,6 +214,10 @@ export const inspectRequest = createServerFn({ method: "POST" })
         ip, method: data.method, path: data.path, payload: data.body ?? null, user_agent: userAgent ?? null,
         allowed: true, reason: "WAF disabled", threat_score: 0,
       }).select("id").single();
+      void notifyTelegram(formatEvent({
+        status: "ALLOWED", ip, method: data.method, path: data.path, body: data.body, userAgent,
+        reason: "WAF disabled", threatScore: 0, matched: [],
+      }));
       return { allowed: true, threatScore: 0, matchedRules: [], logId: log?.id };
     }
 
@@ -222,6 +226,10 @@ export const inspectRequest = createServerFn({ method: "POST" })
         ip, method: data.method, path: data.path, payload: data.body ?? null, user_agent: userAgent ?? null,
         allowed: false, category: "ip_block", severity: "high", reason: "IP is on blocklist", threat_score: 10,
       }).select("id").single();
+      void notifyTelegram(formatEvent({
+        status: "BLOCKED", ip, method: data.method, path: data.path, body: data.body, userAgent,
+        reason: "IP is on blocklist", category: "ip_block", severity: "high", threatScore: 10, matched: [],
+      }));
       return { allowed: false, category: "ip_block", severity: "high", reason: "IP is on blocklist", threatScore: 10, matchedRules: [], logId: log?.id };
     }
 
