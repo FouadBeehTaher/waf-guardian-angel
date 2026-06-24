@@ -22,6 +22,8 @@ function SettingsPage() {
   const [enabled, setEnabled] = useState(true);
   const [rateLimit, setRateLimit] = useState(60);
   const [autoBlock, setAutoBlock] = useState(5);
+  const [testingTelegram, setTestingTelegram] = useState(false);
+  const sendTest = useServerFn(testTelegram);
 
   useEffect(() => {
     supabase.from("waf_settings").select("*").eq("id", 1).single().then(({ data }) => {
@@ -41,10 +43,26 @@ function SettingsPage() {
     else toast.success(t.settings.saved);
   }
 
+  async function handleTestTelegram() {
+    setTestingTelegram(true);
+    try {
+      const result = await sendTest();
+      if (result.ok) {
+        toast.success(t.settings.testTelegramSent);
+      } else {
+        toast.error(`${t.settings.testTelegramFailed}: ${result.error}`);
+      }
+    } catch (e: any) {
+      toast.error(`${t.settings.testTelegramFailed}: ${e.message}`);
+    } finally {
+      setTestingTelegram(false);
+    }
+  }
+
   return (
     <div>
       <PageHeader title={t.settings.title} />
-      <div className="p-6">
+      <div className="p-6 space-y-6">
         <Card className="max-w-xl space-y-6 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -62,6 +80,19 @@ function SettingsPage() {
             <Input type="number" min={1} value={autoBlock} onChange={(e) => setAutoBlock(Number(e.target.value))} className="mt-2 font-mono" />
           </div>
           <Button onClick={save} className="w-full">{t.settings.save}</Button>
+        </Card>
+
+        <Card className="max-w-xl p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-base">Telegram</Label>
+              <p className="text-xs text-muted-foreground">Send a test message to verify the bot token and chat ID.</p>
+            </div>
+            <Button variant="outline" onClick={handleTestTelegram} disabled={testingTelegram} className="gap-2">
+              <Send className="h-4 w-4" />
+              {testingTelegram ? "Sending..." : t.settings.testTelegram}
+            </Button>
+          </div>
         </Card>
       </div>
     </div>
