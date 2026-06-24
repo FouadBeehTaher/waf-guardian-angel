@@ -355,4 +355,34 @@ export const getPublicStats = createServerFn({ method: "GET" }).handler(async ()
     total_requests: requests.count ?? 0,
     active_rules: rules.count ?? 0,
   };
-});
+  });
+
+// ---------------- Telegram test message ----------------
+export const testTelegram = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async (): Promise<{ ok: boolean; error?: string; messageId?: number }> => {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+    if (!token || !chatId) {
+      return { ok: false, error: "TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured" };
+    }
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: "🧪 <b>WAF Guardian Test</b>\nTelegram integration is working!",
+          parse_mode: "HTML",
+          disable_web_page_preview: true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        return { ok: false, error: data.description || `HTTP ${res.status}` };
+      }
+      return { ok: true, messageId: data.result?.message_id };
+    } catch (e: any) {
+      return { ok: false, error: e.message };
+    }
+  });
